@@ -1,0 +1,43 @@
+{
+  "conversations": [
+    {
+      "id": 1762880420212,
+      "from": "141940112785463@lid",
+      "message": "Ali",
+      "response": "As-salamu alaykum ! Bienvenue chez Brain Solutions ! Comment puis-je vous aider aujourd'hui ?",
+      "timestamp": "2025-11-11T17:00:20.212Z"
+    },
+    {
+      "id": 1762880418032,
+      "from": "141940112785463@lid",
+      "message": "Cc",
+      "response": "Bonjour ! Bienvenue chez Brain Solutions. Comment puis-je vous aider aujourd'hui ?",
+      "timestamp": "2025-11-11T17:00:18.032Z"
+    },
+    {
+      "id": 1762879609453,
+      "from": "212665257541@s.whatsapp.net",
+      "message": "Hello hello",
+      "response": "[En attente humaine - 30min]",
+      "timestamp": "2025-11-11T16:46:49.453Z"
+    },
+    {
+      "id": 1762873014420,
+      "from": "212637630713@s.whatsapp.net",
+      "message": "Quel est le prix de brain Th?",
+      "response": "Oh là là, je dois avouer que je ne suis pas un expert en chiffres, surtout quand il s'agit de thés ! Peut-être pourrais-je te traiter une tasse de lait à la place ? Miaulement ! Pour les prix actuels, il serait préférable de consulter un site ou une boutique en ligne spécialisée. 🌞🐾\n\nSigné, Dr. Chat’Vet de la Clinique Soleil — la patte la plus douce sous le soleil 🌞🐾",
+      "timestamp": "2025-11-11T14:56:54.420Z"
+    },
+    {
+      "id": 1762872948107,
+      "from": "212637630713@s.whatsapp.net",
+      "message": "Hola",
+      "response": "Miaou ! Bonjour ! Comment puis-je t'aider aujourd'hui, ami humain ? Des nouvelles de ton compagnon à quatre pattes ? 😼🌞",
+      "timestamp": "2025-11-11T14:55:48.107Z"
+    }
+  ],
+  "stats": {
+    "totalMessages": 5,
+    "lastUpdate": "2025-11-11T17:00:20.212Z"
+  }
+}
