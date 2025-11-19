@@ -1,126 +1,138 @@
-// brain-whatsapp/frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
+import Layout from './components/Layout';
+import SessionManager from './components/SessionManager';
+import ProductCatalog from './components/ProductCatalog';
 import Conversations from './components/Conversations';
-import CatalogEditor from './components/CatalogEditor';
-import QRSection from './components/QRSection';
-import ClientSelector from './components/ClientSelector';
+import Leads from './components/Leads';
+import { Settings, UserCheck, X, MessageSquare, ShoppingBag, Package } from 'lucide-react';
+import axios from 'axios';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('conversations');
-  const [selectedClient, setSelectedClient] = useState('lattafa');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedClient, setSelectedClient] = useState(null); // Objet complet du client sélectionné
+  const [clients, setClients] = useState([]);
 
-  const [status, setStatus] = useState({
-    whatsapp: 'disconnected',
-    server: 'checking...'
-  });
-
-  // Vérifier le status du serveur
+  // Charger les clients au démarrage pour avoir les noms
   useEffect(() => {
-    checkStatus();
-    const interval = setInterval(checkStatus, 5000);
-    return () => clearInterval(interval);
+    axios.get('/api/clients')
+      .then(res => setClients(res.data.clients || []))
+      .catch(err => console.error(err));
   }, []);
 
-  const checkStatus = async () => {
-    try {
-      const response = await fetch('/api/status');
-      const data = await response.json();
-      setStatus({
-        whatsapp: data.whatsapp,
-        server: 'running'
-      });
-    } catch (error) {
-      setStatus(prev => ({ ...prev, server: 'offline' }));
-    }
+  const handleClientSelect = (client) => {
+    setSelectedClient(client);
+    // Optionnel : Changer d'onglet automatiquement ? 
+    // Pour l'instant on reste sur le dashboard car il contient les sessions
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <Toaster position="top-right" />
-      
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-brain-primary">
-                Brain WhatsApp Admin
-              </h1>
-            </div>
-            
-            {/* Status indicators + Client Selector */}
-            <div className="flex items-center space-x-6">
-              {/* ✅ AJOUT - Client Selector */}
-              <ClientSelector 
-                selectedClient={selectedClient}
-                onClientChange={setSelectedClient}
-              />
-              
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-500 mr-2">Serveur:</span>
-                  <span className={`inline-flex h-2 w-2 rounded-full ${
-                    status.server === 'running' ? 'bg-green-400' : 'bg-red-400'
-                  }`}></span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-500 mr-2">WhatsApp:</span>
-                  <span className={`inline-flex h-2 w-2 rounded-full ${
-                    status.whatsapp === 'connected' ? 'bg-green-400' : 'bg-yellow-400'
-                  }`}></span>
-                </div>
+      <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+        
+        {/* Barre d'info Client Actif */}
+        {selectedClient && (
+          <div className="mb-6 bg-gray-50 border-l-4 border-black p-4 rounded-r-md flex justify-between items-center animate-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <div className="bg-black text-white p-2 rounded-full">
+                <UserCheck size={20} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Client Actif</p>
+                <h2 className="text-xl font-bold text-gray-900">{selectedClient.name}</h2>
               </div>
             </div>
+            <button 
+              onClick={() => setSelectedClient(null)}
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-colors"
+              title="Désélectionner"
+            >
+              <X size={20} />
+            </button>
           </div>
-        </div>
-      </header>
+        )}
 
-      {/* Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('conversations')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'conversations'
-                  ? 'border-brain-primary text-brain-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              💬 Conversations
-            </button>
-            <button
-              onClick={() => setActiveTab('catalog')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'catalog'
-                  ? 'border-brain-primary text-brain-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📦 Catalogue
-            </button>
-            <button
-              onClick={() => setActiveTab('qr')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'qr'
-                  ? 'border-brain-primary text-brain-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📱 QR Code
-            </button>
-          </nav>
-        </div>
-      </div>
+        {activeTab === 'dashboard' && (
+          <SessionManager 
+            globalSelectedClient={selectedClient}
+            onClientSelect={handleClientSelect}
+          />
+        )}
 
-      {/* Content - ✅ CHANGEMENT - Passer clientId */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'conversations' && <Conversations clientId={selectedClient} />}
-        {activeTab === 'catalog' && <CatalogEditor clientId={selectedClient} />}
-        {activeTab === 'qr' && <QRSection />}
-      </main>
-    </div>
+        {activeTab === 'chat' && (
+          selectedClient ? (
+            // TODO: Mettre à jour Conversations pour accepter un object client ou id
+            <div className="h-full flex flex-col">
+               <Conversations clientId={selectedClient.id} />
+            </div>
+          ) : (
+             <div className="h-full flex flex-col items-center justify-center text-gray-400 p-10 border-2 border-dashed border-gray-200 rounded-lg">
+                <MessageSquare size={48} className="mb-4 opacity-20" />
+                <p className="text-lg font-medium text-gray-600">Aucun client sélectionné</p>
+                <p className="text-sm mt-2">Veuillez sélectionner un client dans le Tableau de Bord pour voir ses conversations.</p>
+                <button 
+                  onClick={() => setActiveTab('dashboard')}
+                  className="mt-6 bg-black text-white px-4 py-2 rounded-md text-sm"
+                >
+                  Aller au Tableau de Bord
+                </button>
+             </div>
+          )
+        )}
+
+        {activeTab === 'leads' && (
+          selectedClient ? (
+            <div className="h-full flex flex-col">
+              <Leads clientId={selectedClient.id} />
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 p-10 border-2 border-dashed border-gray-200 rounded-lg">
+                <Package size={48} className="mb-4 opacity-20" />
+                <p className="text-lg font-medium text-gray-600">Aucun client sélectionné</p>
+                <p className="text-sm mt-2">Veuillez sélectionner un client dans le Tableau de Bord pour voir ses commandes.</p>
+                 <button 
+                  onClick={() => setActiveTab('dashboard')}
+                  className="mt-6 bg-black text-white px-4 py-2 rounded-md text-sm"
+                >
+                  Aller au Tableau de Bord
+                </button>
+             </div>
+          )
+        )}
+
+        {activeTab === 'catalog' && (
+          selectedClient ? (
+            <ProductCatalog preSelectedClientId={selectedClient.id} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 p-10 border-2 border-dashed border-gray-200 rounded-lg">
+                <ShoppingBag size={48} className="mb-4 opacity-20" />
+                <p className="text-lg font-medium text-gray-600">Aucun client sélectionné</p>
+                <p className="text-sm mt-2">Veuillez sélectionner un client dans le Tableau de Bord pour gérer son catalogue.</p>
+                 <button 
+                  onClick={() => setActiveTab('dashboard')}
+                  className="mt-6 bg-black text-white px-4 py-2 rounded-md text-sm"
+                >
+                  Aller au Tableau de Bord
+                </button>
+             </div>
+          )
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="max-w-2xl mx-auto mt-10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+              <Settings size={32} className="text-gray-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Paramètres</h2>
+            <p className="text-gray-500 mt-2">
+              Configuration du compte et préférences système.
+            </p>
+          </div>
+        )}
+
+      </Layout>
+    </>
   );
 }
 

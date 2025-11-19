@@ -1,12 +1,20 @@
 require('dotenv').config();
 
+// Désactiver vérification SSL pour Render/Dev
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 /**
  * Génère une réponse via Flowise en injectant le context dans la question
  * Le system prompt reste dans Flowise (Amina prompt)
  */
 async function generateResponse(flowiseConfig, catalog, session, userMessage) {
   try {
-    const FLOWISE_ENDPOINT = `https://cloud.flowiseai.com/api/v1/prediction/${flowiseConfig.chatflow_id}`;
+    let FLOWISE_ENDPOINT;
+    if (flowiseConfig.apiUrl && flowiseConfig.apiUrl.startsWith('http')) {
+      FLOWISE_ENDPOINT = flowiseConfig.apiUrl;
+    } else {
+      FLOWISE_ENDPOINT = `https://cloud.flowiseai.com/api/v1/prediction/${flowiseConfig.chatflow_id}`;
+    }
     
     console.log('📤 Envoi vers Flowise:', {
       client: catalog.client_id,
@@ -25,30 +33,43 @@ async function generateResponse(flowiseConfig, catalog, session, userMessage) {
     let enrichedMessage = `[CONTEXT INTERNE - À utiliser pour ta réponse mais ne jamais mentionner au client]\n\n`;
     
     // CATALOGUE COMPLET
-    enrichedMessage += `📦 CATALOGUE LATTAFA:\n`;
-    catalog.products.forEach(p => {
-      const stockEmoji = p.stock ? '✅' : '❌';
-      enrichedMessage += `${stockEmoji} ${p.name} - ${p.price} MAD (${p.volume})\n`;
-      enrichedMessage += `   Genre: ${p.gender} | Tags: ${p.tags.join(', ')}\n`;
-      enrichedMessage += `   ${p.description}\n`;
-      if (!p.stock && p.stock_alert) {
-        enrichedMessage += `   ⚠️ ${p.stock_alert}\n`;
-        if (p.similar && p.similar.length > 0) {
-          const alternatives = p.similar.map(id => 
-            catalog.products.find(pr => pr.id === id)?.name
-          ).filter(Boolean);
-          enrichedMessage += `   💡 Alternatives: ${alternatives.join(', ')}\n`;
+    enrichedMessage += `📦 CATALOGUE:\n`;
+    if (Array.isArray(catalog.products)) {
+      catalog.products.forEach(p => {
+        const stockEmoji = p.stock ? '✅' : '❌';
+        const volumeInfo = p.volume ? `(${p.volume})` : '';
+        enrichedMessage += `${stockEmoji} ${p.name} - ${p.price} MAD ${volumeInfo}\n`;
+        
+        if (p.gender || (p.tags && p.tags.length > 0)) {
+          const genderInfo = p.gender ? `Genre: ${p.gender}` : '';
+          const tagsInfo = (p.tags && p.tags.length > 0) ? `Tags: ${p.tags.join(', ')}` : '';
+          const separator = (genderInfo && tagsInfo) ? ' | ' : '';
+          enrichedMessage += `   ${genderInfo}${separator}${tagsInfo}\n`;
         }
-      }
-      enrichedMessage += `\n`;
-    });
+        
+        if (p.description) enrichedMessage += `   ${p.description}\n`;
+        
+        if (!p.stock && p.stock_alert) {
+          enrichedMessage += `   ⚠️ ${p.stock_alert}\n`;
+          if (p.similar && p.similar.length > 0) {
+            const alternatives = p.similar.map(id => 
+              catalog.products.find(pr => pr.id === id)?.name
+            ).filter(Boolean);
+            enrichedMessage += `   💡 Alternatives: ${alternatives.join(', ')}\n`;
+          }
+        }
+        enrichedMessage += `\n`;
+      });
+    }
     
     // PROMOTIONS
-    enrichedMessage += `\n🎁 PROMOTIONS ACTIVES:\n`;
-    catalog.promotions.forEach(p => {
-      if (p.active) enrichedMessage += `- ${p.text}\n`;
-    });
-    enrichedMessage += `\n`;
+    if (catalog.promotions && Array.isArray(catalog.promotions)) {
+      enrichedMessage += `\n🎁 PROMOTIONS ACTIVES:\n`;
+      catalog.promotions.forEach(p => {
+        if (p.active) enrichedMessage += `- ${p.text}\n`;
+      });
+      enrichedMessage += `\n`;
+    }
     
     // PANIER ACTUEL
     if (session.cart.length > 0) {
@@ -62,11 +83,13 @@ async function generateResponse(flowiseConfig, catalog, session, userMessage) {
       enrichedMessage += `💰 Total panier: ${cartTotal} MAD\n`;
       
       // Livraison
-      if (cartTotal >= catalog.shipping.free_from) {
-        enrichedMessage += `✅ Livraison GRATUITE incluse!\n`;
-      } else {
-        const remaining = catalog.shipping.free_from - cartTotal;
-        enrichedMessage += `📦 Encore ${remaining} MAD pour livraison gratuite (sinon +30 MAD)\n`;
+      if (catalog.shipping && catalog.shipping.free_from) {
+        if (cartTotal >= catalog.shipping.free_from) {
+          enrichedMessage += `✅ Livraison GRATUITE incluse!\n`;
+        } else {
+          const remaining = catalog.shipping.free_from - cartTotal;
+          enrichedMessage += `📦 Encore ${remaining} MAD pour livraison gratuite (sinon +${catalog.shipping.cost || 30} MAD)\n`;
+        }
       }
       
       // Promo 3+1
@@ -109,11 +132,13 @@ async function generateResponse(flowiseConfig, catalog, session, userMessage) {
     }
     
     // KEYWORDS DARIJA
-    enrichedMessage += `💬 SI CLIENT PARLE DARIJA:\n`;
-    Object.entries(catalog.darija_keywords).forEach(([darija, french]) => {
-      enrichedMessage += `- "${darija}" = ${french}\n`;
-    });
-    enrichedMessage += `\n`;
+    if (catalog.darija_keywords && typeof catalog.darija_keywords === 'object') {
+      enrichedMessage += `💬 SI CLIENT PARLE DARIJA:\n`;
+      Object.entries(catalog.darija_keywords).forEach(([darija, french]) => {
+        enrichedMessage += `- "${darija}" = ${french}\n`;
+      });
+      enrichedMessage += `\n`;
+    }
     
     enrichedMessage += `[FIN CONTEXT - Réponds maintenant au message client]\n\n`;
     enrichedMessage += `MESSAGE CLIENT:\n${userMessage}`;

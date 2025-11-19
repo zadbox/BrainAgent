@@ -111,7 +111,7 @@ Accéder : **http://localhost:5173**
 
 ---
 
-## ⚙️ Connecter Flowise
+## ⚙️ Connecter 
 
 ### Créer Assistant Flowise
 

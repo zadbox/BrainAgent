@@ -1,0 +1,18 @@
+{
+  "id": "gula",
+  "client_name": "Gula",
+  "status": "active",
+  "whatsapp": "",
+  "flowise": {
+    "apiUrl": "https://flowiseai-h82e.onrender.com/api/v1/prediction/60e166f4-bd76-4654-8096-ade8ff539ac9"
+  },
+  "products": [
+    {
+      "id": "prod-1763548292937",
+      "name": "X",
+      "price": 22,
+      "description": "dei",
+      "stock": 10
+    }
+  ]
+}

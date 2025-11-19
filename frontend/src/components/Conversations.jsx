@@ -28,8 +28,16 @@ function Conversations({ clientId }) {
       if (data.success && data.data) {
         const convData = data.data;
         
+        let convArray = [];
+        if (Array.isArray(convData.conversations)) {
+            convArray = convData.conversations;
+        } else if (convData.conversations && typeof convData.conversations === 'object') {
+            // Support legacy format (object)
+            convArray = Object.values(convData.conversations);
+        }
+
         // ✅ TRI INVERSÉ : Plus récentes en premier
-        const sortedConversations = (convData.conversations || []).sort((a, b) => {
+        const sortedConversations = convArray.sort((a, b) => {
           const dateA = new Date(a.updated_at || a.created_at);
           const dateB = new Date(b.updated_at || b.created_at);
           return dateB - dateA; // Plus récent en premier

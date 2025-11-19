@@ -1,0 +1,10 @@
+{
+  "id": "mounim",
+  "client_name": "Mounim",
+  "status": "active",
+  "whatsapp": "",
+  "flowise": {
+    "apiUrl": "https://flowiseai-h82e.onrender.com/api/v1/prediction/60e166f4-bd76-4654-8096-ade8ff539ac9"
+  },
+  "products": []
+}
