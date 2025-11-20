@@ -9,6 +9,7 @@ const sessionService = require('./services/session.service');
 const flowiseService = require('./services/flowise-service');
 const whatsappService = require('./services/whatsapp.service');
 const leadsService = require('./services/leads.service');
+const orderParser = require('./services/order-parser');
 
 // Express App
 const app = express();
@@ -47,6 +48,16 @@ const handleIncomingMessage = async (msg, sessionId, clientId) => {
     // Charger catalog & session
     const catalog = await clientService.getClientData(clientId);
     const userSession = sessionService.getSession(clientId, remoteJid);
+
+    if (!isFromMe) {
+        const parsingResult = orderParser.processCustomerMessage(userSession, catalog, text);
+        if (parsingResult.infoCaptured) {
+            console.log(`   📝 Infos client mises à jour:`, userSession.customer_info);
+        }
+        if (parsingResult.cartUpdated) {
+            console.log(`   🛒 Panier mis à jour:`, userSession.cart);
+        }
+    }
 
     // --- HANDOVER LOGIC ---
     if (isFromMe) {
@@ -97,49 +108,43 @@ const handleIncomingMessage = async (msg, sessionId, clientId) => {
         console.error(`   ❌ Pas de socket trouvé pour session ${sessionId}`);
     }
 
+    orderParser.processBotResponse(userSession, response, catalog);
+
     userSession.messages.push({ from: 'bot', text: response, timestamp: new Date().toISOString() });
     await sessionService.saveSession(userSession);
 
-    // --- DÉTECTION COMMANDE VALIDÉE ---
-    // Si la commande contient toutes les infos nécessaires, créer un lead
-    const isOrderComplete = 
-      userSession.cart && 
-      userSession.cart.length > 0 && 
-      userSession.customer?.fullName && 
-      userSession.customer?.address &&
-      !userSession.orderConverted; // Éviter de créer plusieurs fois le même lead
+    const cartDetails = orderParser.getCartWithDetails(userSession, catalog);
+    const customerInfo = userSession.customer_info || {};
+    const phoneFromJid = remoteJid.includes('@') ? remoteJid.split('@')[0] : remoteJid;
+    const hasAllInfo = cartDetails.length > 0 &&
+      customerInfo.name &&
+      (customerInfo.phone || phoneFromJid) &&
+      customerInfo.address &&
+      customerInfo.city &&
+      !userSession.orderConverted;
 
-    if (isOrderComplete) {
-      console.log(`   📦 Commande validée détectée, création du lead...`);
+    if (hasAllInfo) {
+      console.log(`   📦 Commande complète détectée, création du lead...`);
       try {
-        // Calculer le total
-        const totalAmount = userSession.cart.reduce((sum, item) => {
-          return sum + (item.price || 0) * (item.quantity || 1);
-        }, 0);
+        const totalAmount = cartDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // Créer le lead
         const leadData = {
-          customerName: userSession.customer.fullName,
-          customerPhone: remoteJid.split('@')[0], // Extraire le numéro
-          customerAddress: userSession.customer.address,
-          products: userSession.cart.map(item => ({
-            name: item.name,
-            quantity: item.quantity || 1,
-            price: item.price || 0
-          })),
+          customerName: customerInfo.name,
+          customerPhone: customerInfo.phone || phoneFromJid,
+          customerAddress: `${customerInfo.address}${customerInfo.city ? `, ${customerInfo.city}` : ''}`,
+          products: cartDetails,
           totalAmount,
           status: 'new',
           sessionId: remoteJid,
-          conversationHistory: userSession.messages.slice(-20) // Garder les 20 derniers messages
+          conversationHistory: userSession.messages.slice(-20)
         };
 
-        await leadsService.createLead(clientId, leadData);
-        
-        // Marquer la commande comme convertie pour ne pas la recréer
+        const lead = await leadsService.createLead(clientId, leadData);
         userSession.orderConverted = true;
+        userSession.orderLeadId = lead.id;
         await sessionService.saveSession(userSession);
 
-        console.log(`   ✅ Lead créé avec succès!`);
+        console.log(`   ✅ Lead créé avec succès (${lead.id})`);
       } catch (leadError) {
         console.error(`   ❌ Erreur création lead:`, leadError.message);
       }

@@ -4,7 +4,7 @@
   "status": "active",
   "whatsapp": "",
   "flowise": {
-    "apiUrl": "https://flowiseai-h82e.onrender.com/api/v1/prediction/60e166f4-bd76-4654-8096-ade8ff539ac9"
+    "apiUrl": "https://flowiseai-h82e.onrender.com/api/v1/prediction/704fb39f-8e99-43f9-b919-5d94dbde0e4a"
   },
   "products": [
     {
@@ -12,6 +12,13 @@
       "name": "X",
       "price": 22,
       "description": "dei",
+      "stock": 10
+    },
+    {
+      "id": "prod-1763670678942",
+      "name": "aws",
+      "price": 34,
+      "description": "cloud ",
       "stock": 10
     }
   ]

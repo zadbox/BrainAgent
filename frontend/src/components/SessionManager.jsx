@@ -307,26 +307,7 @@ const SessionManager = ({ globalSelectedClient, onClientSelect }) => {
             </div>
           </div>
         )}
-
-        {/* Test Agent Flowise */}
-        {clientCatalog?.flowise?.apiUrl && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-            <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-              🤖 Agent IA Flowise
-            </h3>
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-purple-700">
-                <p>✅ Configuré : {clientCatalog.flowise.apiUrl.substring(0, 50)}...</p>
-              </div>
-              <button 
-                onClick={() => testFlowiseAgent(globalSelectedClient.id)}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-700"
-              >
-                Tester l'Agent
-              </button>
-            </div>
-          </div>
-        )}
+        
       </div>
     );
   }
